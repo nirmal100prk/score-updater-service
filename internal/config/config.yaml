@@ -1,0 +1,9 @@
+name: score-publisher-service
+host: localhost
+port: 7003
+dbconfig:
+  host: localhost
+  port: 5432
+  username: postgres
+  password: nirmal123
+  dbname: test-db
