@@ -30,6 +30,9 @@ type DbConfig struct {
 }
 
 type KafkaConfig struct {
+	Broker string
+	Topic string
+	GroupId string
 }
 
 func NewConfig() (*ServiceConfig, error) {

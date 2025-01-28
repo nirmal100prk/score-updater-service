@@ -7,3 +7,7 @@ dbconfig:
   username: postgres
   password: nirmal123
   dbname: test-db
+kafka:
+  broker: "localhost:9092"
+  topic: "user-scores"
+  groupid: "score-service-consumers"

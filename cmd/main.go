@@ -28,9 +28,9 @@ func main() {
 	}
 
 	// Kafka configuration
-	brokers := []string{"localhost:9092"}
-	topic := "user-scores"
-	groupId := "score-service-consumers"
+	brokers := []string{cfg.KafkaCfg.Broker}
+	topic := cfg.KafkaCfg.Topic
+	groupId := cfg.KafkaCfg.GroupId
 
 	consumer, err := kafka.NewKafkaConsumer(brokers, topic, groupId)
 	if err != nil {

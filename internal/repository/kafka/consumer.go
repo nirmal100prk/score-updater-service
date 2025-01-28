@@ -19,7 +19,7 @@ func NewKafkaConsumer(brokers []string, topic string, groupID string) (*KafkaCon
 	// Create a new Kafka consumer
 	consumer, err := kafka.NewConsumer(&kafka.ConfigMap{
 		"bootstrap.servers": brokers[0], // Use the first broker in the list
-		"group.id":          groupID,    // Consumer group ID
+		//"group.id":          groupID,    // Consumer group ID
 		"auto.offset.reset": "earliest", // Start consuming from the earliest offset if no offset is committed
 	})
 	if err != nil {
