@@ -11,3 +11,6 @@ kafka:
   broker: "localhost:9092"
   topic: "user-scores"
   groupid: "score-service-consumers"
+logger:
+  level: INFO
+  format: json

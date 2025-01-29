@@ -2,7 +2,8 @@ package service
 
 import (
 	"encoding/json"
-	"fmt"
+	"log"
+	"score-updater-svc/internal/models"
 	"score-updater-svc/internal/repository/kafka"
 )
 
@@ -16,20 +17,24 @@ func NewMessageRepository(messageRepo kafka.MessageRepository) *MessageService {
 	}
 }
 
-func (s *MessageService) StartConsuming() (string, error) {
+func (s *MessageService) StartConsuming() (<-chan models.Message, error) {
 
-	var msg string
-	processMessage := func(message []byte) error {
+	messageChannel := make(chan models.Message)
+	go func() {
+		processMessage := func(message []byte) error {
+			var msg models.Message
+			err := json.Unmarshal(message, &msg)
+			if err != nil {
+				log.Printf("Failed to unmarshal message: %v", err)
+				return err
+			}
 
-		err := json.Unmarshal(message, &msg)
-		if err != nil {
-			return fmt.Errorf("failed to unmarshal message: %w", err)
+			messageChannel <- msg // Push message to the channel
+			return nil
 		}
 
-		return nil
-	}
+		s.messageRepo.StartConsuming(processMessage)
+	}()
 
-	s.messageRepo.StartConsuming(processMessage)
-
-	return msg, nil
+	return messageChannel, nil
 }

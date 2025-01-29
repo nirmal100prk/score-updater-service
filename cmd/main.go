@@ -14,6 +14,7 @@ import (
 	"score-updater-svc/internal/service"
 	"score-updater-svc/internal/transport/router"
 	"score-updater-svc/internal/transport/websockets"
+	"score-updater-svc/pkg/logger"
 	"syscall"
 	"time"
 
@@ -27,14 +28,17 @@ func main() {
 		log.Fatalf("failed to load config: %v", err)
 	}
 
+	SetupLogger(cfg)
+
 	// Kafka configuration
-	brokers := []string{cfg.KafkaCfg.Broker}
-	topic := cfg.KafkaCfg.Topic
-	groupId := cfg.KafkaCfg.GroupId
+	brokers := []string{cfg.Kafka.Broker}
+	topic := cfg.Kafka.Topic
+	groupId := cfg.Kafka.GroupId
 
 	consumer, err := kafka.NewKafkaConsumer(brokers, topic, groupId)
 	if err != nil {
-		log.Fatalf("Failed to initialize Kafka consumer: %v", err)
+		slog.Error("error: ", err.Error())
+		//log.Fatalf("Failed to initialize Kafka consumer: %v", err)
 	}
 
 	// initialize repository
@@ -61,6 +65,21 @@ func main() {
 	go initGracefulStop(rootCtxCancelFunc, httpServer, consumer, pg)
 	<-rootCtx.Done()
 
+}
+
+func SetupLogger(cfg *config.ServiceConfig) {
+	var level slog.Level
+	if cfg.Logger.Level == "debug" {
+		level = slog.LevelDebug
+	} else {
+		level = slog.LevelInfo
+	}
+	logCfg := logger.Config{
+		Format: cfg.Logger.Format,
+		Level:  level,
+	}
+	appLogger := logger.NewLogger(logCfg)
+	slog.SetDefault(appLogger)
 }
 
 func NewHTTPServer(cfg *config.ServiceConfig, wsHandler *websockets.WebSocketHandler) (*http.Server, error) {
@@ -118,11 +137,11 @@ func initGracefulStop(rootCtxCancelFunc context.CancelFunc, httpServer *http.Ser
 func constructPostgresURL(dbConfig *config.ServiceConfig) string {
 	return fmt.Sprintf(
 		"postgres://%s:%s@%s:%d/%s?sslmode=%s",
-		dbConfig.PostgresCfg.Username,
-		dbConfig.PostgresCfg.Password,
-		dbConfig.PostgresCfg.Host,
-		dbConfig.PostgresCfg.Port,
-		dbConfig.PostgresCfg.DbName,
+		dbConfig.DbConfig.Username,
+		dbConfig.DbConfig.Password,
+		dbConfig.DbConfig.Host,
+		dbConfig.DbConfig.Port,
+		dbConfig.DbConfig.DbName,
 		false,
 	)
 }

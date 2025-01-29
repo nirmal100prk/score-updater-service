@@ -1,6 +1,7 @@
 package websockets
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 	"score-updater-svc/internal/service"
@@ -46,29 +47,24 @@ func (h *WebSocketHandler) handleConnection(conn *websocket.Conn) {
 		log.Println("Client disconnected")
 	}()
 
-	messageChannel := make(chan string)
+	messageChannel, err := h.messageService.StartConsuming()
+	if err != nil {
+		log.Printf("Failed to consume message from Kafka: %v", err)
+		return
+	}
 
-	// Start a goroutine to consume messages from Kafka
-	go func() {
-		for {
-			message, err := h.messageService.StartConsuming()
-			if err != nil {
-				log.Printf("Failed to consume message from Kafka: %v", err)
-				continue
-			}
-			messageChannel <- message
+	for message := range messageChannel {
+		jsonMessage, err := json.Marshal(message)
+		if err != nil {
+			log.Printf("Failed to marshal message: %v", err)
+			continue
 		}
-	}()
 
-	for {
-		select {
-		case message := <-messageChannel:
-			// Push the Kafka message to the WebSocket client
-			err := conn.WriteMessage(websocket.TextMessage, []byte(message))
-			if err != nil {
-				log.Printf("Failed to send message to WebSocket client: %v", err)
-				return
-			}
+		// Push the Kafka message to the WebSocket client
+		err = conn.WriteMessage(websocket.TextMessage, jsonMessage)
+		if err != nil {
+			log.Printf("Failed to send message to WebSocket client: %v", err)
+			return
 		}
 	}
 }

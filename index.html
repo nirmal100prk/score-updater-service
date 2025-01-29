@@ -3,38 +3,94 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebSocket Example</title>
+    <title>WebSocket Data Stream</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+        }
+        #data-container {
+            border: 1px solid #ccc;
+            padding: 10px;
+            height: 400px;
+            width: 60%;
+            margin: 20px auto;
+            overflow-y: auto;
+            background-color: #fff;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        .message {
+            padding: 10px;
+            margin: 5px;
+            border-radius: 5px;
+            background-color: #e3f2fd;
+            border-left: 5px solid #2196F3;
+            text-align: left;
+            font-size: 16px;
+        }
+        .error-message {
+            background-color: #ffebee;
+            border-left: 5px solid #d32f2f;
+        }
+    </style>
 </head>
 <body>
-    <h1>WebSocket Data Update</h1>
+    <h1>WebSocket Data Stream</h1>
     <div id="data-container">Waiting for data...</div>
 
     <script>
-        // Create a new WebSocket connection
         const socket = new WebSocket('ws://localhost:7003/ws');
+        const dataContainer = document.getElementById('data-container');
 
-        // Connection opened
         socket.addEventListener('open', (event) => {
-            console.log('WebSocket connection opened:', event);
+            console.log('✅ WebSocket connected:', event);
+            dataContainer.innerHTML = "<strong>Connected to WebSocket server.</strong>";
         });
 
-        // Listen for messages from the server
         socket.addEventListener('message', (event) => {
-            console.log('Message from server:', event.data);
-
-            // Update the content of the div with the received data
-            const dataContainer = document.getElementById('data-container');
-            dataContainer.textContent = event.data;
+            console.log('📩 Message from server:', event.data);
+            
+            try {
+                const jsonData = JSON.parse(event.data); // Parse JSON message
+                if (typeof jsonData.message !== 'undefined') {
+                    const messageText = jsonData.message.toString(); // Extract and convert the "message" field to string
+                    
+                    // Create a new div element for the message
+                    const messageElement = document.createElement('div');
+                    messageElement.classList.add('message');
+                    messageElement.textContent = `📢 ${messageText}`;
+                    
+                    // Append the new message to the container
+                    dataContainer.appendChild(messageElement);
+                    
+                    // Auto-scroll to the latest message
+                    dataContainer.scrollTop = dataContainer.scrollHeight;
+                }
+            } catch (error) {
+                console.error("❌ Error parsing message as JSON:", event.data, error);
+                const errorElement = document.createElement('div');
+                errorElement.classList.add('message', 'error-message');
+                errorElement.textContent = "⚠️ Error: Received invalid data format.";
+                dataContainer.appendChild(errorElement);
+            }
         });
 
-        // Handle errors
         socket.addEventListener('error', (event) => {
-            console.error('WebSocket error:', event);
+            console.error('❌ WebSocket error:', event);
         });
 
-        // Connection closed
         socket.addEventListener('close', (event) => {
-            console.log('WebSocket connection closed:', event);
+            console.log('🔴 WebSocket closed:', event);
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message', 'error-message');
+            messageElement.textContent = "🔴 WebSocket connection closed.";
+            dataContainer.appendChild(messageElement);
         });
     </script>
 </body>
