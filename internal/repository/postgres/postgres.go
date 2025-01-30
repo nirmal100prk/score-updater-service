@@ -35,15 +35,9 @@ func New(ctx context.Context, connString string) (*Client, error) {
 	return &Client{DB: db}, nil
 }
 
-// NewPGXDatabase creates a new PGXDatabase instance.
-func NewPGXDatabase(ctx context.Context, connString string) (*PGXDatabase, error) {
-	pool, err := New(ctx, connString)
-	if err != nil {
-		return nil, err
+// Close shuts down the database connection.
+func (c *Client) Close() {
+	if c.DB != nil {
+		c.DB.Close()
 	}
-	return &PGXDatabase{db: pool.DB}, nil
-}
-
-func (r *PGXDatabase) Close() {
-	r.Close()
 }

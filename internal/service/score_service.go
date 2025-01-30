@@ -2,17 +2,17 @@ package service
 
 import (
 	"context"
-	"score-updater-svc/internal/repository/postgres"
+	"score-updater-svc/internal/repository/datastore"
 )
 
 type ScoreService struct {
-	scoreRepo postgres.PgxRepository
+	scoreRepo datastore.DataRepository
 }
 
-func NewScoreService(repo postgres.PgxRepository) *ScoreService {
+func NewScoreService(repo datastore.DataRepository) *ScoreService {
 	return &ScoreService{scoreRepo: repo}
 }
 
-func (s *ScoreService) UpdateScore(ctx context.Context, val any) error {
-	return s.scoreRepo.UpdateScore(ctx)
+func (s *ScoreService) UpdateScore(ctx context.Context, val int64) error {
+	return s.scoreRepo.InsertScore(ctx,val)
 }

@@ -41,19 +41,32 @@ func main() {
 		//log.Fatalf("Failed to initialize Kafka consumer: %v", err)
 	}
 
-	// initialize repository
-	messageService := service.NewMessageRepository(consumer)
-
-	// initialize service
-	wsHandler := websockets.NewWebSocketHandler(messageService)
-
 	rootCtx, rootCtxCancelFunc := context.WithCancel(context.Background())
 	defer rootCtxCancelFunc()
 
-	pg, err := postgres.NewPGXDatabase(rootCtx, constructPostgresURL(cfg))
+	// initialize postgreSQL database connection
+	dbclient, err := postgres.New(rootCtx, constructPostgresURL(cfg))
 	if err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
+
+	// initialize db abstraction layer to interact with database
+	// dataRepo := postgres.NewDatabaseProvider(dbclient)
+	// if err != nil {
+	// 	log.Fatalf("Failed to initialize database: %v", err)
+	// }
+
+	// initialize repository layer that encapsulates db operations
+	//postgresRepo := datastore.NewDataRepository(dataRepo)
+
+	// initialize the message service
+	messageService := service.NewMessageService(consumer)
+
+	// initialize the score service
+	//scoreService := service.NewScoreService(postgresRepo)
+
+	// initialize the websocket handler
+	wsHandler := websockets.NewWebSocketHandler(messageService)
 
 	// Initialize HTTP server
 	httpServer, err := NewHTTPServer(cfg, wsHandler)
@@ -62,7 +75,7 @@ func main() {
 	}
 
 	// Graceful shutdown
-	go initGracefulStop(rootCtxCancelFunc, httpServer, consumer, pg)
+	go initGracefulStop(rootCtxCancelFunc, httpServer, consumer, dbclient)
 	<-rootCtx.Done()
 
 }
@@ -110,7 +123,7 @@ func NewHTTPServer(cfg *config.ServiceConfig, wsHandler *websockets.WebSocketHan
 }
 
 // initGracefulStop handles graceful shutdown
-func initGracefulStop(rootCtxCancelFunc context.CancelFunc, httpServer *http.Server, producer *kafka.KafkaConsumer, pg *postgres.PGXDatabase) {
+func initGracefulStop(rootCtxCancelFunc context.CancelFunc, httpServer *http.Server, producer *kafka.KafkaConsumer, pg *postgres.Client) {
 	// Wait for stop signal
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)

@@ -11,7 +11,7 @@ type MessageService struct {
 	messageRepo kafka.MessageRepository
 }
 
-func NewMessageRepository(messageRepo kafka.MessageRepository) *MessageService {
+func NewMessageService(messageRepo kafka.MessageRepository) *MessageService {
 	return &MessageService{
 		messageRepo: messageRepo,
 	}
@@ -29,7 +29,7 @@ func (s *MessageService) StartConsuming() (<-chan models.Message, error) {
 				return err
 			}
 
-			messageChannel <- msg // Push message to the channel
+			messageChannel <- msg
 			return nil
 		}
 
